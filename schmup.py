@@ -14,7 +14,7 @@ WIDTH = 480
 HEIGHT = 600
 FPS = 60
 
-#define colours \
+#define colours
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
@@ -52,6 +52,13 @@ def draw_shield_bar (surf, x, y, pct):
     fill_rect = pygame.Rect(x, y, fill, BAR_HEIGHT)
     pygame.draw.rect(surf, GREEN, fill_rect)
     pygame.draw.rect(surf, WHITE, outline_rect, 2)
+
+def draw_lives(surf, x, y, lives, img):
+    for i in range (lives):
+        img_rect = img.get_rect()
+        img_rect.x = x + 30 * i
+        img_rect.y = y
+        surf.blit(img, img_rect)
 
 class Player(pygame.sprite.Sprite):
     """The Player Sprite Class"""
@@ -161,7 +168,7 @@ class Bullet(pygame.sprite.Sprite):
 
     def update(self):
         self.rect.y += self.speedy
-        # kill if it moves off the top of hte screen
+        # kill if it moves off the top of the screen
         if self.rect.bottom < 0:
             self.kill()
 
@@ -232,6 +239,7 @@ shoot_sound = pygame.mixer.Sound(path.join(snd_dir, 'laser.wav'))
 expl_sounds = []
 for snd in ['Explosion1.wav', 'Explosion2.wav']:
     expl_sounds.append(pygame.mixer.Sound(path.join(snd_dir, snd)))
+player_die_sound = pygame.mixer.Sound(path.join(snd_dir, 'explosion9.wav'))
 pygame.mixer.music.load(path.join(snd_dir, 'takeOffForCombat.ogg'))
 pygame.mixer.music.set_volume(5.0)
 
@@ -280,6 +288,7 @@ while running:
         all_sprites.add(expl)
         newmob()
         if player.shield <= 0:
+            player_die_sound.play()
             death_explosion = Explosion(player.rect.center, 'player')
             all_sprites.add(death_explosion)
             player.hide()
@@ -296,6 +305,7 @@ while running:
     all_sprites.draw(screen)
     draw_text(screen, str(score), 18, int (WIDTH / 2), 10)
     draw_shield_bar (screen, 5, 5, player.shield)
+    draw_lives(screen, WIDTH - 100, 5, player.lives, player_mini_img)
 
     # *after* drawing everything, flip the display
     pygame.display.flip()
