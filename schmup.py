@@ -13,6 +13,7 @@ snd_dir = path.join(path.dirname(__file__), 'snd')
 WIDTH = 480
 HEIGHT = 600
 FPS = 60
+POWERUP_TIME = 5000
 
 #define colours
 WHITE = (255, 255, 255)
@@ -78,8 +79,15 @@ class Player(pygame.sprite.Sprite):
         self.lives = 3
         self.hidden = False
         self.hide_timer = pygame.time.get_ticks()
+        self.power = 1
+        self.power_time = pygame.time.get_ticks()
 
     def update(self):
+        #timeout for powerups
+        if self.power >= 2 and pygame.time.get_ticks() - self.power_time > POWERUP_TIME:
+            self.power -= 1
+            self.power_time = pygame.time.get_ticks()
+
         #unhide if hidden
         if self.hidden and pygame.time.get_ticks() - self.hide_timer > 1000:
             self.hidden = False
@@ -99,14 +107,27 @@ class Player(pygame.sprite.Sprite):
         if self.rect.left < 0:
             self.rect.left = 0
 
+    def powerup(self):
+        self.power += 1
+        self.power_time = pygame.time.get_ticks()
+
     def shoot(self):
         now = pygame.time.get_ticks()
         if now - self.last_shot > self.shoot_delay:
             self.last_shot = now
-            bullet = Bullet(self.rect.centerx, self.rect.top)
-            all_sprites.add(bullet)
-            bullets.add(bullet)
-            shoot_sound.play()
+            if self.power == 1 or self.power >= 3:
+                bullet = Bullet(self.rect.centerx, self.rect.top)
+                all_sprites.add(bullet)
+                bullets.add(bullet)
+                shoot_sound.play()
+            if self.power >= 2:
+                bullet1 = Bullet(self.rect.left, self.rect.centery)
+                bullet2 = Bullet(self.rect.right, self.rect.centery)
+                all_sprites.add(bullet1)
+                all_sprites.add(bullet2)
+                bullets.add(bullet1)
+                bullets.add(bullet2)
+                shoot_sound.play()
 
     def hide(self):
         # hide player temporarily
@@ -181,7 +202,7 @@ class Pow(pygame.sprite.Sprite):
         self.image.set_colorkey(BLACK)
         self.rect = self.image.get_rect()
         self.rect.center = center
-        self.speedy = 2
+        self.speedy = 4
 
     def update(self):
         self.rect.y += self.speedy
@@ -262,6 +283,8 @@ for snd in ['Explosion1.wav', 'Explosion2.wav']:
 player_die_sound = pygame.mixer.Sound(path.join(snd_dir, 'explosion9.wav'))
 pygame.mixer.music.load(path.join(snd_dir, 'takeOffForCombat.ogg'))
 pygame.mixer.music.set_volume(5.0)
+shield_sound = pygame.mixer.Sound(path.join(snd_dir, 'Powerup1.wav'))
+gun_sound = pygame.mixer.Sound(path.join(snd_dir, 'Powerup2.wav'))
 
 all_sprites = pygame.sprite.Group()
 mobs = pygame.sprite.Group()
@@ -309,9 +332,13 @@ while running:
     hits = pygame.sprite.spritecollide(player, powerups, True)
     for hit in hits:
         if hit.type == 'shield':
+            shield_sound.play()
             player.shield += random.randrange(10, 30)
             if player.shield >= 100:
                 player.shield = 100
+        if hit.type == 'gun':
+            gun_sound.play()
+            player.powerup()
 
     # check to see if a mob hit the player
     hits = pygame.sprite.spritecollide(player, mobs, True, pygame.sprite.collide_circle)
