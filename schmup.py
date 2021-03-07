@@ -6,7 +6,6 @@ import pygame
 import random
 from os import path
 
-
 img_dir = path.join(path.dirname(__file__), 'img')
 snd_dir = path.join(path.dirname(__file__), 'snd')
 
@@ -234,6 +233,23 @@ class Explosion(pygame.sprite.Sprite):
                 self.rect = self.image.get_rect()
                 self.rect.center = center
 
+def show_go_screen():
+    screen.blit(background, background_rect)
+    draw_text(screen, "SHMUP!", 64, int (WIDTH / 2), int (HEIGHT / 4))
+    draw_text(screen, "Arrow keys move, Space to fire", 22,
+                int (WIDTH / 2), int (HEIGHT / 2))
+    draw_text(screen, "Press a key to begin", 18,
+                int (WIDTH / 2), int (HEIGHT * 3 /4))
+    pygame.display.flip()
+    waiting = True
+    while waiting:
+        clock.tick(FPS)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                quit()
+            if event.type == pygame.KEYUP:
+                waiting = False
+
 # load all game graphics
 background = pygame.image.load(path.join(img_dir, "starfield.png")).convert()
 background_rect = background.get_rect()
@@ -286,23 +302,28 @@ pygame.mixer.music.set_volume(5.0)
 shield_sound = pygame.mixer.Sound(path.join(snd_dir, 'Powerup1.wav'))
 gun_sound = pygame.mixer.Sound(path.join(snd_dir, 'Powerup2.wav'))
 
-all_sprites = pygame.sprite.Group()
-mobs = pygame.sprite.Group()
-bullets = pygame.sprite.Group()
-powerups = pygame.sprite.Group()
-
-player = Player()
-all_sprites.add(player)
-for i in range(8):
-    newmob()
-
-score = 0
-
 pygame.mixer.music.play(loops=-1)
 
 # game loop
+game_over = True
 running = True
 while running:
+    if game_over:
+        show_go_screen()
+        game_over = False
+        # set/reset initial variables
+        all_sprites = pygame.sprite.Group()
+        mobs = pygame.sprite.Group()
+        bullets = pygame.sprite.Group()
+        powerups = pygame.sprite.Group()
+
+        player = Player()
+        all_sprites.add(player)
+        for i in range(8):
+            newmob()
+
+        score = 0
+
     # keep loop running at the right speed
     clock.tick(FPS)
 
@@ -357,7 +378,7 @@ while running:
 
     # if the player died and the explosion has finished playing
     if player.lives == 0 and not death_explosion.alive():
-        running = False
+        game_over = True
 
     # draw / render
     screen.fill(BLACK)
